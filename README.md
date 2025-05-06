@@ -9,49 +9,29 @@
 
 ## About Laravel
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Daftar Isi
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
-
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
-
-## Learning Laravel
-
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
-
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
-
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-## Laravel Sponsors
-
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
-
-### Premium Partners
-
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[WebReinvent](https://webreinvent.com/)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Jump24](https://jump24.co.uk)**
-- **[Redberry](https://redberry.international/laravel/)**
-- **[Active Logic](https://activelogic.com)**
-- **[byte5](https://byte5.de)**
-- **[OP.GG](https://op.gg)**
-
-## Contributing
-
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+1.  [Pendahuluan](#pendahuluan)
+2.  [Base URL](#base-url)
+3.  [Autentikasi](#autentikasi)
+    *   [Autentikasi User (Sanctum)](#autentikasi-user-sanctum)
+    *   [Autentikasi RVM (API Key)](#autentikasi-rvm-api-key)
+4.  [Endpoint Autentikasi](#endpoint-autentikasi)
+    *   [POST /api/login](#post-apilogin)
+    *   [POST /api/auth/google](#post-apiauthgoogle)
+    *   [POST /api/logout (Sanctum)](#post-apilogout-sanctum)
+5.  [Endpoint User (Memerlukan Autentikasi Sanctum)](#endpoint-user-memerlukan-autentikasi-sanctum)
+    *   [GET /api/user](#get-apiuser)
+    *   [GET /api/user/profile](#get-apiuserprofile)
+    *   [POST /api/user/rvm-token](#post-apiuserrvm-token)
+    *   [GET /api/user/points](#get-apiuserpoints)
+    *   [GET /api/user/deposits](#get-apiuserdeposits)
+6.  [Endpoint RVM (Memerlukan Autentikasi RVM API Key)](#endpoint-rvm-memerlukan-autentikasi-rvm-api-key)
+    *   [POST /api/deposits](#post-apideposits)
+7.  [Endpoint Dashboard (Memerlukan Autentikasi Sanctum & Role)](#endpoint-dashboard-memerlukan-autentikasi-sanctum--role)
+    *   [GET /api/dashboard/stats](#get-apidashboardstats)
+    *   [GET /api/dashboard/rvms](#get-apidashboardrvms)
+    *   [GET /api/dashboard/deposits](#get-apidashboarddeposits)
 
 ## Code of Conduct
 
