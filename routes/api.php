@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\AuthController;    // Controller untuk Auth API (Lo
 use App\Http\Controllers\Api\UserController;    // Controller untuk operasi terkait User (Profil, Generate Token RVM)
 use App\Http\Controllers\Api\DepositController; // Controller untuk handle deposit RVM
 use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\RvmManagementController;
 
 /*
 |--------------------------------------------------------------------------
@@ -84,7 +85,15 @@ Route::middleware(['auth:sanctum', 'role.admin_operator']) // Terapkan kedua mid
     Route::get('/rvms', [DashboardController::class, 'listRvms'])->name('rvms.list');
     // Mendapatkan daftar semua deposit (dengan filter)
     Route::get('/deposits', [DashboardController::class, 'listDeposits'])->name('deposits.list');
-    // TODO: Tambahkan endpoint lain untuk dashboard
-    // Misal: POST /rvms (tambah RVM), PUT /rvms/{rvm} (update RVM), GET /users, dll.
+    // === ROUTE BARU untuk Manajemen RVM ===
+    // Menggunakan API Resource Route untuk CRUD RVM
+    // Ini akan otomatis membuat route untuk:
+    // GET /api/dashboard/rvms -> RvmManagementController@index (list)     -> name: api.dashboard.rvms.index
+    // POST /api/dashboard/rvms -> RvmManagementController@store (create)   -> name: api.dashboard.rvms.store
+    // GET /api/dashboard/rvms/{rvm} -> RvmManagementController@show (view) -> name: api.dashboard.rvms.show
+    // PUT /api/dashboard/rvms/{rvm} -> RvmManagementController@update (update) -> name: api.dashboard.rvms.update
+    // DELETE /api/dashboard/rvms/{rvm} -> RvmManagementController@destroy (delete) -> name: api.dashboard.rvms.destroy
+    Route::apiResource('rvms', RvmManagementController::class);
+    // === AKHIR ROUTE BARU ===
 
 });
