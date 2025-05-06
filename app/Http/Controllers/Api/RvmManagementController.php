@@ -64,19 +64,23 @@ class RvmManagementController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
+
+        // Di dalam metode store() RvmManagementController
+        $validatedData = $validator->validated(); // Ambil data yang lolos validasi
+
         DB::beginTransaction();
         try {
-            // Generate API Key baru
             $apiKey = Str::random(40);
             $hashedApiKey = hash('sha256', $apiKey);
 
             $rvm = ReverseVendingMachine::create([
-                'name' => $request->input('name'),
-                'location' => $request->input('location'),
-                'latitude' => $request->input('latitude'),
-                'longitude' => $request->input('longitude'),
-                'status' => $request->input('status'),
-                'api_key' => $hashedApiKey, // Simpan hash
+                'name' => $validatedData['name'],
+                'location' => $validatedData['location'],
+                // Ambil dari validated data jika ada, jika tidak eksplisit set null
+                'latitude' => $validatedData['latitude'] ?? null,
+                'longitude' => $validatedData['longitude'] ?? null,
+                'status' => $validatedData['status'],
+                'api_key' => $hashedApiKey,
             ]);
 
             DB::commit();
@@ -97,86 +101,112 @@ class RvmManagementController extends Controller
 
     /**
      * Display the specified RVM.
-     * Menggunakan Route Model Binding.
+     * Mencari RVM secara manual berdasarkan ID.
      */
-    public function show(ReverseVendingMachine $reverseVendingMachine): JsonResponse
+    // Ubah parameter menjadi string ID
+    public function show(string $rvmId): JsonResponse
     {
-        // $reverseVendingMachine sudah otomatis di-load berdasarkan {rvm} di URL
-        // Kita bisa load relasi jika perlu
-        // $reverseVendingMachine->loadCount('deposits');
-        return response()->json($reverseVendingMachine);
+        Log::info("Attempting to show RVM with ID: " . $rvmId);
+        // Cari manual, gunakan findOrFail untuk otomatis 404 jika tidak ada
+        try {
+            $rvm = ReverseVendingMachine::findOrFail($rvmId);
+            Log::info("RVM found in show:", $rvm->toArray());
+            return response()->json($rvm); // Kembalikan model yang ditemukan
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            Log::warning("RVM not found in show method for ID: " . $rvmId);
+            return response()->json(['message' => 'RVM not found'], 404);
+        } catch (\Exception $e) {
+             Log::error("Error showing RVM ID {$rvmId}: " . $e->getMessage());
+             return response()->json(['message' => 'Could not retrieve RVM details.'], 500);
+        }
     }
 
     /**
      * Update the specified RVM in storage.
-     * Menggunakan Route Model Binding.
+     * Mencari RVM secara manual berdasarkan ID.
      */
-    public function update(Request $request, ReverseVendingMachine $reverseVendingMachine): JsonResponse
+     // Ubah parameter menjadi string ID
+    public function update(Request $request, string $rvmId): JsonResponse
     {
-         // Validasi input untuk update
-         // API Key biasanya tidak diupdate via endpoint ini, mungkin perlu endpoint terpisah
+         Log::info("Attempting to update RVM with ID: " . $rvmId);
+         // Cari manual, gunakan findOrFail
+         try {
+            $reverseVendingMachine = ReverseVendingMachine::findOrFail($rvmId);
+         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json(['message' => 'RVM not found.'], 404);
+         }
+
+         // Validasi input (Sama seperti sebelumnya)
          $validator = Validator::make($request->all(), [
-            'name' => 'sometimes|required|string|max:255', // sometimes: hanya validasi jika ada di request
+            'name' => 'sometimes|required|string|max:255',
             'location' => 'sometimes|required|string|max:500',
             'latitude' => 'nullable|numeric|between:-90,90',
             'longitude' => 'nullable|numeric|between:-180,180',
             'status' => 'sometimes|required|string|in:active,inactive,maintenance',
         ]);
+        if ($validator->fails()) { return response()->json(['errors' => $validator->errors()], 422); }
 
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
-        }
-
+        // Lakukan Update menggunakan model yang ditemukan manual
         try {
-            // Update hanya field yang ada di request (menggunakan fill + save)
-            $reverseVendingMachine->fill($request->only(['name', 'location', 'latitude', 'longitude', 'status']));
-            $reverseVendingMachine->save();
+            $updated = $reverseVendingMachine->update(
+                $request->only(['name', 'location', 'latitude', 'longitude', 'status'])
+            );
+
+            if (!$updated) { /* ... Log warning & return 500 ... */ }
 
             return response()->json([
                 'message' => 'RVM updated successfully.',
-                'rvm' => $reverseVendingMachine
+                'rvm' => $reverseVendingMachine // Kembalikan model yang sudah terupdate
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Failed to update RVM ID ' . $reverseVendingMachine->id . ': ' . $e->getMessage());
-            return response()->json(['message' => 'Failed to update RVM.'], 500);
+             Log::error('Failed to update RVM ID ' . $rvmId . ': ' . $e->getMessage());
+             return response()->json(['message' => 'Failed to update RVM.'], 500);
         }
     }
 
     /**
      * Remove the specified RVM from storage.
-     * Menggunakan Route Model Binding.
-     * HATI-HATI: Pertimbangkan konsekuensi menghapus RVM (foreign key constraint, data historis).
-     * Mungkin lebih baik menggunakan soft delete atau hanya menonaktifkan (mengubah status).
+     * Mencari RVM secara manual berdasarkan ID.
      */
-    public function destroy(ReverseVendingMachine $reverseVendingMachine): JsonResponse
+     // Ubah parameter menjadi string ID
+    public function destroy(string $rvmId): JsonResponse
     {
-        // PERINGATAN: Operasi destroy bisa berbahaya.
-        // Opsi 1: Nonaktifkan saja (Soft Delete jika diaktifkan di model, atau ubah status)
-        /*
-        try {
-            $reverseVendingMachine->status = 'inactive'; // Atau status 'deleted'
-            $reverseVendingMachine->api_key = null; // Nonaktifkan key juga?
-            $reverseVendingMachine->save();
-            return response()->json(['message' => 'RVM deactivated successfully.'], 200);
-        } catch (\Exception $e) {
-            Log::error('Failed to deactivate RVM ID ' . $reverseVendingMachine->id . ': ' . $e->getMessage());
-            return response()->json(['message' => 'Failed to deactivate RVM.'], 500);
-        }
-        */
+        Log::info("Attempting to delete RVM with ID: " . $rvmId);
+         // Cari manual, gunakan findOrFail
+         try {
+            $reverseVendingMachine = ReverseVendingMachine::findOrFail($rvmId);
+         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json(['message' => 'RVM not found.'], 404);
+         }
 
-        // Opsi 2: Hapus permanen (jika benar-benar yakin dan constraint DB mengizinkan/cascade)
+        // Lakukan Delete menggunakan model yang ditemukan manual
         try {
-            $rvmId = $reverseVendingMachine->id;
-            $reverseVendingMachine->delete();
-             return response()->json(['message' => "RVM ID {$rvmId} deleted successfully."], 200); // Atau 204 No Content
+            $rvmIdForLog = $reverseVendingMachine->id; // ID untuk logging/pesan
+            $deleted = $reverseVendingMachine->delete();
+
+            if ($deleted) {
+                Log::info("Successfully deleted (or soft-deleted) RVM ID: {$rvmIdForLog}");
+                return response()->json(['message' => "RVM ID {$rvmIdForLog} deleted successfully."], 200);
+            } else {
+                // Blok 'else' (delete return false)
+                $modelClass = get_class($reverseVendingMachine);
+                $modelUses = class_uses_recursive($modelClass);
+                Log::error("Failed to delete RVM ID {$rvmIdForLog} - delete() returned false.", [
+                    'model_class' => $modelClass,
+                    'model_uses_traits' => $modelUses,
+                    'is_soft_deleting' => method_exists($modelClass, 'isForceDeleting')
+                ]);
+                return response()->json(['message' => 'Failed to delete RVM. Check model events or soft delete status.'], 500);
+            }
         } catch (\Exception $e) {
-             Log::error('Failed to delete RVM ID ' . $reverseVendingMachine->id . ': ' . $e->getMessage());
-            // Cek apakah error karena foreign key constraint
-             if ($e instanceof \Illuminate\Database\QueryException && str_contains($e->getMessage(), 'foreign key constraint fails')) {
-                  return response()->json(['message' => 'Cannot delete RVM because it has associated deposit records.'], 409); // Conflict
-             }
-             return response()->json(['message' => 'Failed to delete RVM.'], 500);
+            // Blok catch Exception (termasuk foreign key)
+             $rvmIdForLog = $rvmId; // Gunakan ID dari parameter jika model gagal di-resolve sebelumnya
+             Log::error("Failed to delete RVM ID {$rvmIdForLog}: " . $e->getMessage());
+            if ($e instanceof \Illuminate\Database\QueryException && str_contains($e->getMessage(), 'foreign key constraint fails')) {
+                 return response()->json(['message' => 'Cannot delete RVM because it has associated deposit records.'], 409); // Conflict
+            }
+            return response()->json(['message' => 'Failed to delete RVM.'], 500);
         }
     }
 
